@@ -1,0 +1,7 @@
+migrations/
+.idea/
+static/
+media/
+__pycache__/
+*.out
+*.conf
