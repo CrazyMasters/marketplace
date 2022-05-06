@@ -188,6 +188,7 @@ class Order(models.Model):
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     created_time = models.DateTimeField(auto_now_add=True)
     paid = models.BooleanField(default=False)
+    canceled = models.BooleanField(default=False)
     completed = models.BooleanField(default=False)
     delivered = models.BooleanField(default=False)
 

@@ -11,6 +11,7 @@ from .views import CityViewSet
 from .views import OrderAddressViewSet
 from .views import OrderViewSet
 from .views import OrderPositionViewSet
+from .views import OrderAdminViewSet
 
 router = DefaultRouter()
 
@@ -25,5 +26,6 @@ router.register('cities', CityViewSet)
 router.register('order_addresses', OrderAddressViewSet)
 router.register('orders', OrderViewSet)
 router.register('orders_positions', OrderPositionViewSet)
+router.register('orders_admin', OrderAdminViewSet)
 
 urlpatterns = router.urls

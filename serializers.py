@@ -97,10 +97,31 @@ class OrderSerializer(serializers.ModelSerializer):
     _store = StoreSerializer(read_only=True)
     status = serializers.CharField(read_only=True)
     amount = serializers.FloatField()
+    created_time = serializers.DateTimeField(format='%d.%m.%Y %H:%M', read_only=True)
+    canceled = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = Order
-        fields = '__all__'
+        fields = [
+            'id', 'store', '_store', 'user', 'address', '_address', 'amount', 'created_time', 'paid', 'completed',
+            'delivered', 'canceled', 'status'
+        ]
+
+
+class OrderAdminSerializer(serializers.ModelSerializer):
+    address = serializers.SlugRelatedField(read_only=True, slug_field='address')
+    status = serializers.CharField(read_only=True)
+    amount = serializers.FloatField(read_only=True)
+    created_time = serializers.DateTimeField(format='%d.%m.%Y %H:%M', read_only=True)
+    paid = serializers.BooleanField(read_only=True)
+    canceled = serializers.BooleanField(read_only=True)
+
+    class Meta:
+        model = Order
+        fields = [
+            'id', 'store', 'user', 'address', 'amount', 'created_time', 'paid', 'completed', 'delivered', 'canceled',
+            'status'
+        ]
 
 
 class OrderPositionSerializer(serializers.ModelSerializer):

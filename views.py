@@ -36,7 +36,7 @@ from .pagination import StandardPagination
 
 from .filters import query_params_filter
 
-from yookassa import Configuration, Payment
+from yookassa import Configuration, Payment, Refund
 
 Configuration.account_id = settings.YOOKASSA_MARKETPLACE["account_id"]
 Configuration.secret_key = settings.YOOKASSA_MARKETPLACE["secret_key"]
@@ -314,6 +314,8 @@ class OrderViewSet(ReadOnlyModelViewSet):
     @action(methods=['post'], detail=True)
     def pay(self, request, pk):
         instance = self.get_object()
+        if instance.canceled:
+            return Response({'detail': 'Заказ был отменен'}, status=400)
         if instance.payment_id:
             payment = Payment.find_one(instance.payment_id)
         else:
@@ -374,3 +376,39 @@ class OrderPositionViewSet(ReadOnlyModelViewSet):
     def filter_queryset(self, queryset):
         queryset = query_params_filter(self.request, queryset, self.filter_key_fields, self.filter_char_fields)
         return super(OrderPositionViewSet, self).filter_queryset(queryset)
+
+
+class OrderAdminViewSet(GenericViewSet):
+    queryset = Order.objects.all()
+    serializer_class = OrderSerializer
+    permission_classes = [IsAuthenticated]
+    filter_backends = [SearchFilter, OrderingFilter]
+    filter_key_fields = ['store', 'user', 'paid', 'completed', 'delivered']
+    filter_char_fields = ['store__name']
+    search_fields = ['store__name']
+    ordering_fields = ['store__name']
+
+    def get_queryset(self):
+        return self.queryset.filter(store__user=self.request.user)
+
+    def filter_queryset(self, queryset):
+        queryset = query_params_filter(self.request, queryset, self.filter_key_fields, self.filter_char_fields)
+        return super(OrderAdminViewSet, self).filter_queryset(queryset)
+
+    @transaction.atomic
+    @action(methods=['post'], detail=True)
+    def cancel(self, request, pk):
+        instance = self.get_object()
+        if instance.canceled:
+            return Response({'detail': 'Заказ уже был отменен'}, status=400)
+        if instance.paid:
+            Refund.create({
+                "amount": {
+                    "value": str(instance.amount),
+                    "currency": "RUB"
+                },
+                "payment_id": instance.payment_id
+            })
+        instance.canceled = True
+        instance.save()
+        return Response({'detail': 'Заказ успешно отменен'}, status=200)
