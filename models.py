@@ -9,7 +9,7 @@ class Store(models.Model):
         return os.path.join("stores", str(self.id), filename)
 
     user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE)
-    name = models.CharField(max_length=200)
+    name = models.CharField(max_length=200, unique=True)
     logo = models.ImageField(upload_to=upload_store_logo)
     city = models.ForeignKey("marketplace.City", on_delete=models.SET_NULL, null=True)
     description = models.TextField(blank=True)
@@ -65,17 +65,17 @@ class Product(models.Model):
     count = models.PositiveIntegerField()
     description = models.TextField(blank=True)
 
-    @property
-    def last_supply_date(self):
-        if self.supply_set.filter(date__lte=timezone.now().date).exists():
-            return self.supply_set.filter(date__lte=timezone.now().date).order_by("-date").first().date
-        return None
-
-    @property
-    def nearest_supply_date(self):
-        if self.supply_set.filter(date__gt=timezone.now().date).exists():
-            return self.supply_set.filter(date__gt=timezone.now().date).order_by("date").first().date
-        return None
+    # @property
+    # def last_supply_date(self):
+    #     if self.supply_set.filter(date__lte=timezone.now().date).exists():
+    #         return self.supply_set.filter(date__lte=timezone.now().date).order_by("-date").first().date
+    #     return None
+    #
+    # @property
+    # def nearest_supply_date(self):
+    #     if self.supply_set.filter(date__gt=timezone.now().date).exists():
+    #         return self.supply_set.filter(date__gt=timezone.now().date).order_by("date").first().date
+    #     return None
 
     def __str__(self):
         return self.name
@@ -114,29 +114,29 @@ class ProductProperty(models.Model):
         unique_together = ['produce', 'property_name']
 
 
-class Supply(models.Model):
-    store = models.ForeignKey("marketplace.Product", on_delete=models.CASCADE)
-    date = models.DateField()
-
-    def __str__(self):
-        return f'{self.store.name} {self.date.strftime("%d.%m.%Y")}'
-
-    class Meta:
-        verbose_name = 'Привоз товаров'
-        verbose_name_plural = 'Привозы товаров'
-
-
-class SupplyPosition(models.Model):
-    supply = models.ForeignKey("marketplace.Supply", on_delete=models.CASCADE)
-    product = models.ForeignKey("marketplace.Product", on_delete=models.CASCADE)
-    count = models.PositiveIntegerField()
-
-    def __str__(self):
-        return f'{self.supply.store.name}: {self.product.name} ({self.supply.date.strftime("%d.%m.%Y")})'
-
-    class Meta:
-        verbose_name = 'Позиция привоза'
-        verbose_name_plural = 'Позиции привозов товаров'
+# class Supply(models.Model):
+#     store = models.ForeignKey("marketplace.Product", on_delete=models.CASCADE)
+#     date = models.DateField()
+#
+#     def __str__(self):
+#         return f'{self.store.name} {self.date.strftime("%d.%m.%Y")}'
+#
+#     class Meta:
+#         verbose_name = 'Привоз товаров'
+#         verbose_name_plural = 'Привозы товаров'
+#
+#
+# class SupplyPosition(models.Model):
+#     supply = models.ForeignKey("marketplace.Supply", on_delete=models.CASCADE)
+#     product = models.ForeignKey("marketplace.Product", on_delete=models.CASCADE)
+#     count = models.PositiveIntegerField()
+#
+#     def __str__(self):
+#         return f'{self.supply.store.name}: {self.product.name} ({self.supply.date.strftime("%d.%m.%Y")})'
+#
+#     class Meta:
+#         verbose_name = 'Позиция привоза'
+#         verbose_name_plural = 'Позиции привозов товаров'
 
 
 class CartPosition(models.Model):
@@ -181,10 +181,12 @@ class OrderAddress(models.Model):
 
 
 class Order(models.Model):
-    pyment_id = models.CharField(max_length=100)
+    payment_id = models.CharField(max_length=100, default=None, null=True)
+    store = models.ForeignKey('marketplace.Store', on_delete=models.SET_NULL, null=True)
     user = models.ForeignKey(get_user_model(), on_delete=models.SET_NULL, null=True)
     address = models.ForeignKey("marketplace.OrderAddress", on_delete=models.SET_NULL, null=True)
     amount = models.DecimalField(max_digits=12, decimal_places=2)
+    created_time = models.DateTimeField(auto_now_add=True)
     paid = models.BooleanField(default=False)
     completed = models.BooleanField(default=False)
     delivered = models.BooleanField(default=False)
