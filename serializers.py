@@ -137,6 +137,7 @@ class ProductAdminSerializer(serializers.ModelSerializer):
     photos = serializers.SerializerMethodField()
     moderator_confirmed = serializers.SlugRelatedField(read_only=True, slug_field='moderator_confirmed',
                                                        source='category')
+    blocked = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = Product

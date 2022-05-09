@@ -102,8 +102,10 @@ class CategoryViewSet(ReadOnlyModelViewSet):
 
 
 class ProductViewSet(ReadOnlyModelViewSet):
-    queryset = Product.objects.filter(category__moderator_confirmed=True, store__moderator_confirmed=True,
-                                      store__blocked=False)
+    queryset = Product.objects.filter(category__moderator_confirmed=True,
+                                      store__moderator_confirmed=True,
+                                      store__blocked=False,
+                                      blocked=False)
     serializer_class = ProductSerializer
     pagination_class = StandardPagination
     permission_classes = [AllowAny]
@@ -120,7 +122,9 @@ class ProductViewSet(ReadOnlyModelViewSet):
 
 class ProductPhotoViewSet(ReadOnlyModelViewSet):
     queryset = ProductPhoto.objects.filter(product__category__moderator_confirmed=True,
-                                           product__store__moderator_confirmed=True, product__store__blocked=False)
+                                           product__store__moderator_confirmed=True,
+                                           product__store__blocked=False,
+                                           product__blocked=False)
     serializer_class = ProductPhotoSerializer
     pagination_class = StandardPagination
     permission_classes = [AllowAny]
@@ -137,7 +141,9 @@ class ProductPhotoViewSet(ReadOnlyModelViewSet):
 
 class ProductPropertyViewSet(ReadOnlyModelViewSet):
     queryset = ProductProperty.objects.filter(product__category__moderator_confirmed=True,
-                                              product__store__moderator_confirmed=True, product__store__blocked=False)
+                                              product__store__moderator_confirmed=True,
+                                              product__store__blocked=False,
+                                              product__blocked=False)
     serializer_class = ProductPropertySerializer
     pagination_class = StandardPagination
     permission_classes = [AllowAny]

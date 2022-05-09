@@ -66,6 +66,7 @@ class Product(models.Model):
     category = models.ForeignKey("marketplace.Category", on_delete=models.SET_NULL, null=True)
     cost = models.DecimalField(max_digits=12, decimal_places=2)
     count = models.PositiveIntegerField()
+    blocked = models.BooleanField(default=False)
     description = models.TextField(blank=True)
 
     # @property
@@ -197,6 +198,8 @@ class Order(models.Model):
 
     @property
     def status(self):
+        if self.canceled:
+            return 'Заказ отменен'
         if not self.paid:
             return 'Ожидает оплаты'
         if not self.completed:
