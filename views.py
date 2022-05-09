@@ -3,6 +3,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.utils import json, encoders
 
 from django.db.models import Sum, F
 from django.db import transaction
@@ -39,6 +40,14 @@ from .pagination import StandardPagination
 from .filters import query_params_filter
 
 from yookassa import Configuration, Payment, Refund
+
+from pyfcm import FCMNotification
+
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
+
+channel_layer = get_channel_layer()
+push_service = FCMNotification(api_key=settings.FCM_DJANGO_SETTINGS["FCM_SERVER_KEY"])
 
 Configuration.account_id = settings.YOOKASSA_MARKETPLACE["account_id"]
 Configuration.secret_key = settings.YOOKASSA_MARKETPLACE["secret_key"]
@@ -322,7 +331,12 @@ class OrderViewSet(ReadOnlyModelViewSet):
         for cart_position in cart_positions:
             order.orderposition_set.create(product=cart_position.product, count=cart_position.count)
         serializer = self.get_serializer(order)
-        return Response(serializer.data, status=201)
+        order_data = serializer.data
+        order_text_data = json.dumps(order_data, cls=encoders.JSONEncoder, ensure_ascii=False)
+        async_to_sync(channel_layer.group_send)(
+            f"order-admin-{order.store.user_id}", {"type": "new_order", "message": order_text_data}
+        )
+        return Response(order_data, status=201)
 
     @transaction.atomic
     @action(methods=['post'], detail=True)
@@ -356,6 +370,27 @@ class OrderViewSet(ReadOnlyModelViewSet):
         if payment["status"] == "succeeded":
             instance.paid = True
             instance.save()
+            instance_data = self.get_serializer(instance).data
+            instance_text_data = json.dumps(instance_data, cls=encoders.JSONEncoder, ensure_ascii=False)
+            async_to_sync(channel_layer.group_send)(
+                f"order-{instance.id}", {"type": "order_change", "message": instance_text_data}
+            )
+            async_to_sync(channel_layer.group_send)(
+                f"order-admin-{instance.id}", {"type": "order_paid", "message": instance_text_data}
+            )
+            extra_notification_kwargs = {
+                "push_type": "order_change",
+                "order_id": instance.id,
+                "order": instance_data
+            }
+            push_service.notify_topic_subscribers(
+                message_title=f"Заказ #{instance.id} оплачен",
+                badge=1,
+                topic_name=str(instance.user_id),
+                message_body="Заказ успешно оплачен! Продавец уже начал его собирать.",
+                sound="default",
+                extra_notification_kwargs=extra_notification_kwargs
+            )
         else:
             payment = Payment.create({
                 "amount": {
