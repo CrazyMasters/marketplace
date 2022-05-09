@@ -11,7 +11,15 @@ from .views import CityViewSet
 from .views import OrderAddressViewSet
 from .views import OrderViewSet
 from .views import OrderPositionViewSet
+
+# admin
 from .views import OrderAdminViewSet
+from .views import OrderPositionAdminViewSet
+from .views import ProductAdminViewSet
+from .views import ProductPhotoAdminViewSet
+from .views import ProductPropertyAdminViewSet
+from .views import StoreAdminViewSet
+from .views import StoreContactAdminViewSet
 
 router = DefaultRouter()
 
@@ -26,6 +34,14 @@ router.register('cities', CityViewSet)
 router.register('order_addresses', OrderAddressViewSet)
 router.register('orders', OrderViewSet)
 router.register('orders_positions', OrderPositionViewSet)
-router.register('orders_admin', OrderAdminViewSet)
+
+# admin
+router.register('admin/orders', OrderAdminViewSet)
+router.register('admin/orders_positions', OrderPositionAdminViewSet)
+router.register('admin/products', ProductAdminViewSet)
+router.register('admin/products_protos', ProductPhotoAdminViewSet)
+router.register('admin/products_properties', ProductPropertyAdminViewSet)
+router.register('admin/stores', StoreAdminViewSet)
+router.register('admin/store_contacts', StoreContactAdminViewSet)
 
 urlpatterns = router.urls

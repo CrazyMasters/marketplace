@@ -31,6 +31,8 @@ from .serializers import CitySerializer
 from .serializers import OrderAddressSerializer
 from .serializers import OrderSerializer
 from .serializers import OrderPositionSerializer
+from .serializers import ProductAdminSerializer
+from .serializers import StoreAdminSerializer
 
 from .pagination import StandardPagination
 
@@ -43,7 +45,7 @@ Configuration.secret_key = settings.YOOKASSA_MARKETPLACE["secret_key"]
 
 
 class StoreViewSet(ReadOnlyModelViewSet):
-    queryset = Store.objects.all()
+    queryset = Store.objects.filter(moderator_confirmed=True, blocked=False)
     serializer_class = StoreSerializer
     pagination_class = StandardPagination
     permission_classes = [AllowAny]
@@ -59,8 +61,9 @@ class StoreViewSet(ReadOnlyModelViewSet):
 
 
 class StoreContactViewSet(ReadOnlyModelViewSet):
-    queryset = StoreContact.objects.all()
+    queryset = StoreContact.objects.filter(store__moderator_confirmed=True, store__blocked=False)
     serializer_class = StoreContactSerializer
+    pagination_class = StandardPagination
     permission_classes = [AllowAny]
     filter_backends = [SearchFilter, OrderingFilter]
     filter_key_fields = ['store']
@@ -74,8 +77,9 @@ class StoreContactViewSet(ReadOnlyModelViewSet):
 
 
 class CategoryViewSet(ReadOnlyModelViewSet):
-    queryset = Category.objects.all()
+    queryset = Category.objects.filter(moderator_confirmed=True)
     serializer_class = CategorySerializer
+    pagination_class = StandardPagination
     permission_classes = [AllowAny]
     filter_backends = [SearchFilter, OrderingFilter]
     filter_key_fields = ['category']
@@ -89,8 +93,10 @@ class CategoryViewSet(ReadOnlyModelViewSet):
 
 
 class ProductViewSet(ReadOnlyModelViewSet):
-    queryset = Product.objects.all()
+    queryset = Product.objects.filter(category__moderator_confirmed=True, store__moderator_confirmed=True,
+                                      store__blocked=False)
     serializer_class = ProductSerializer
+    pagination_class = StandardPagination
     permission_classes = [AllowAny]
     filter_backends = [SearchFilter, OrderingFilter]
     filter_key_fields = ['category', 'store']
@@ -104,8 +110,10 @@ class ProductViewSet(ReadOnlyModelViewSet):
 
 
 class ProductPhotoViewSet(ReadOnlyModelViewSet):
-    queryset = ProductPhoto.objects.all()
+    queryset = ProductPhoto.objects.filter(product__category__moderator_confirmed=True,
+                                           product__store__moderator_confirmed=True, product__store__blocked=False)
     serializer_class = ProductPhotoSerializer
+    pagination_class = StandardPagination
     permission_classes = [AllowAny]
     filter_backends = [SearchFilter, OrderingFilter]
     filter_key_fields = ['product']
@@ -119,8 +127,10 @@ class ProductPhotoViewSet(ReadOnlyModelViewSet):
 
 
 class ProductPropertyViewSet(ReadOnlyModelViewSet):
-    queryset = ProductProperty.objects.all()
+    queryset = ProductProperty.objects.filter(product__category__moderator_confirmed=True,
+                                              product__store__moderator_confirmed=True, product__store__blocked=False)
     serializer_class = ProductPropertySerializer
+    pagination_class = StandardPagination
     permission_classes = [AllowAny]
     filter_backends = [SearchFilter, OrderingFilter]
     filter_key_fields = ['product']
@@ -136,6 +146,7 @@ class ProductPropertyViewSet(ReadOnlyModelViewSet):
 class CartPositionViewSet(ReadOnlyModelViewSet):
     queryset = CartPosition.objects.all()
     serializer_class = CartPositionSerializer
+    pagination_class = StandardPagination
     permission_classes = [AllowAny]
     filter_backends = [SearchFilter, OrderingFilter]
     filter_key_fields = ['product', 'product__shop']
@@ -216,6 +227,7 @@ class CartPositionViewSet(ReadOnlyModelViewSet):
 class CityViewSet(ReadOnlyModelViewSet):
     queryset = City.objects.all()
     serializer_class = CitySerializer
+    pagination_class = StandardPagination
     permission_classes = [AllowAny]
     filter_backends = [SearchFilter, OrderingFilter]
     filter_key_fields = []
@@ -231,6 +243,7 @@ class CityViewSet(ReadOnlyModelViewSet):
 class OrderAddressViewSet(ModelViewSet):
     queryset = OrderAddress.objects.all()
     serializer_class = OrderAddressSerializer
+    pagination_class = StandardPagination
     permission_classes = [IsAuthenticated]
     filter_backends = [SearchFilter, OrderingFilter]
     filter_key_fields = []
@@ -249,6 +262,7 @@ class OrderAddressViewSet(ModelViewSet):
 class OrderViewSet(ReadOnlyModelViewSet):
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
+    pagination_class = StandardPagination
     filter_backends = [SearchFilter, OrderingFilter]
     filter_key_fields = ['address', 'paid', 'completed', 'delivered']
     filter_char_fields = []
@@ -363,6 +377,7 @@ class OrderViewSet(ReadOnlyModelViewSet):
 class OrderPositionViewSet(ReadOnlyModelViewSet):
     queryset = OrderPosition.objects.all()
     serializer_class = OrderPositionSerializer
+    pagination_class = StandardPagination
     permission_classes = [IsAuthenticated]
     filter_backends = [SearchFilter, OrderingFilter]
     filter_key_fields = ['order', 'product']
@@ -381,6 +396,7 @@ class OrderPositionViewSet(ReadOnlyModelViewSet):
 class OrderAdminViewSet(GenericViewSet):
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
+    pagination_class = StandardPagination
     permission_classes = [IsAuthenticated]
     filter_backends = [SearchFilter, OrderingFilter]
     filter_key_fields = ['store', 'user', 'paid', 'completed', 'delivered']
@@ -412,3 +428,117 @@ class OrderAdminViewSet(GenericViewSet):
         instance.canceled = True
         instance.save()
         return Response({'detail': 'Заказ успешно отменен'}, status=200)
+
+
+class OrderPositionAdminViewSet(ModelViewSet):
+    queryset = OrderPosition.objects.all()
+    serializer_class = OrderPositionSerializer
+    pagination_class = StandardPagination
+    permission_classes = [IsAuthenticated]
+    filter_backends = [SearchFilter, OrderingFilter]
+    filter_key_fields = ['order', 'product']
+    filter_char_fields = ['product__name']
+    search_fields = ['product__name']
+    ordering_fields = ['count']
+
+    def get_queryset(self):
+        return self.queryset.filter(order__store__user=self.request.user)
+
+    def filter_queryset(self, queryset):
+        queryset = query_params_filter(self.request, queryset, self.filter_key_fields, self.filter_char_fields)
+        return super(OrderPositionAdminViewSet, self).filter_queryset(queryset)
+
+
+class ProductAdminViewSet(ModelViewSet):
+    queryset = Product.objects.all()
+    serializer_class = ProductAdminSerializer
+    pagination_class = StandardPagination
+    permission_classes = [IsAuthenticated]
+    filter_backends = [SearchFilter, OrderingFilter]
+    filter_key_fields = ['category', 'store']
+    filter_char_fields = ['name']
+    search_fields = ['name', 'description']
+    ordering_fields = ['name', 'description', 'cost']
+
+    def get_queryset(self):
+        return self.queryset.filter(store__user=self.request.user)
+
+    def filter_queryset(self, queryset):
+        queryset = query_params_filter(self.request, queryset, self.filter_key_fields, self.filter_char_fields)
+        return super(ProductAdminViewSet, self).filter_queryset(queryset)
+
+
+class ProductPhotoAdminViewSet(ModelViewSet):
+    queryset = ProductPhoto.objects.all()
+    serializer_class = ProductPhotoSerializer
+    pagination_class = StandardPagination
+    permission_classes = [AllowAny]
+    filter_backends = [SearchFilter, OrderingFilter]
+    filter_key_fields = ['product']
+    filter_char_fields = []
+    search_fields = []
+    ordering_fields = []
+
+    def get_queryset(self):
+        return self.queryset.filter(product__store__user=self.request.user)
+
+    def filter_queryset(self, queryset):
+        queryset = query_params_filter(self.request, queryset, self.filter_key_fields, self.filter_char_fields)
+        return super(ProductPhotoAdminViewSet, self).filter_queryset(queryset)
+
+
+class ProductPropertyAdminViewSet(ModelViewSet):
+    queryset = ProductProperty.objects.all()
+    serializer_class = ProductPropertySerializer
+    pagination_class = StandardPagination
+    permission_classes = [IsAuthenticated]
+    filter_backends = [SearchFilter, OrderingFilter]
+    filter_key_fields = ['product']
+    filter_char_fields = []
+    search_fields = []
+    ordering_fields = []
+
+    def get_queryset(self):
+        return self.queryset.filter(product__store__user=self.request.user)
+
+    def filter_queryset(self, queryset):
+        queryset = query_params_filter(self.request, queryset, self.filter_key_fields, self.filter_char_fields)
+        return super(ProductPropertyAdminViewSet, self).filter_queryset(queryset)
+
+
+class StoreAdminViewSet(ModelViewSet):
+    queryset = Store.objects.all()
+    serializer_class = StoreAdminSerializer
+    pagination_class = StandardPagination
+    permission_classes = [IsAuthenticated]
+    filter_backends = [SearchFilter, OrderingFilter]
+    filter_key_fields = ['city']
+    filter_char_fields = ['name']
+    search_fields = ['name', 'city__name', 'description']
+    ordering_fields = ['name', 'city']
+
+    def get_queryset(self):
+        return self.queryset.filter(user=self.request.user)
+
+    def filter_queryset(self, queryset):
+        queryset = query_params_filter(self.request, queryset, self.filter_key_fields, self.filter_char_fields)
+        return super(StoreAdminViewSet, self).filter_queryset(queryset)
+
+
+class StoreContactAdminViewSet(ModelViewSet):
+    queryset = StoreContact.objects.all()
+    serializer_class = StoreContactSerializer
+    pagination_class = StandardPagination
+    permission_classes = [IsAuthenticated]
+    filter_backends = [SearchFilter, OrderingFilter]
+    filter_key_fields = ['store']
+    filter_char_fields = ['contact_name', 'contact_data']
+    search_fields = ['contact_name', 'contact_data', 'description']
+    ordering_fields = ['contact_name', 'contact_data', 'description']
+
+    def get_queryset(self):
+        return self.queryset.filter(store__user=self.request.user)
+
+    def filter_queryset(self, queryset):
+        queryset = query_params_filter(self.request, queryset, self.filter_key_fields, self.filter_char_fields)
+        return super(StoreContactAdminViewSet, self).filter_queryset(queryset)

@@ -128,3 +128,26 @@ class OrderPositionSerializer(serializers.ModelSerializer):
     class Meta:
         model = OrderPosition
         fields = '__all__'
+
+
+class ProductAdminSerializer(serializers.ModelSerializer):
+    _category = CategorySerializer(read_only=True)
+    _store = StoreSerializer(read_only=True)
+    cost = serializers.FloatField()
+    photos = serializers.SerializerMethodField()
+    moderator_confirmed = serializers.SlugRelatedField(read_only=True, slug_field='moderator_confirmed',
+                                                       source='category')
+
+    class Meta:
+        model = Product
+        fields = '__all__'
+
+
+class StoreAdminSerializer(serializers.ModelSerializer):
+    user = serializers.HiddenField(default=serializers.CurrentUserDefault())
+    moderator_confirmed = serializers.BooleanField(read_only=True)
+    blocked = serializers.BooleanField(read_only=True)
+
+    class Meta:
+        model = Store
+        fields = '__all__'

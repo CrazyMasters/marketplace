@@ -12,6 +12,8 @@ class Store(models.Model):
     name = models.CharField(max_length=200, unique=True)
     logo = models.ImageField(upload_to=upload_store_logo)
     city = models.ForeignKey("marketplace.City", on_delete=models.SET_NULL, null=True)
+    moderator_confirmed = models.BooleanField(default=False)
+    blocked = models.BooleanField(default=False)
     description = models.TextField(blank=True)
 
     def __str__(self):
@@ -41,8 +43,9 @@ class Category(models.Model):
         return os.path.join("categories", str(self.id), filename)
 
     category = models.ForeignKey("marketplace.Category", on_delete=models.SET_NULL, default=None, null=True)
-    name = models.CharField(max_length=100)
+    name = models.CharField(max_length=100, unique=True)
     img = models.ImageField(upload_to=upload_category_img)
+    moderator_confirmed = models.BooleanField(default=False)
     description = models.TextField(blank=True)
 
     @property
