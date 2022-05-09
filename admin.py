@@ -117,12 +117,12 @@ class CityAdmin(admin.ModelAdmin):
     fieldsets = (
         (None, {
             'fields': ('name', 'longitude', 'latitude',)
-        })
+        }),
     )
     add_fieldsets = (
         (None, {
             'fields': ('name', 'longitude', 'latitude',)
-        })
+        }),
     )
     search_fields = ('name',)
     ordering = ('name', 'longitude', 'latitude',)

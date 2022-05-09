@@ -42,7 +42,8 @@ class Category(models.Model):
     def upload_category_img(self, filename):
         return os.path.join("categories", str(self.id), filename)
 
-    category = models.ForeignKey("marketplace.Category", on_delete=models.SET_NULL, default=None, null=True)
+    category = models.ForeignKey("marketplace.Category", on_delete=models.SET_NULL, default=None, null=True,
+                                 related_name='nested_categories')
     name = models.CharField(max_length=100, unique=True)
     img = models.ImageField(upload_to=upload_category_img, null=True, default=None)
     moderator_confirmed = models.BooleanField(default=False)
