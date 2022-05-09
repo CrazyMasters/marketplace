@@ -1,3 +1,6 @@
+import pandas as pd
+import requests
+
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet, GenericViewSet
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.filters import SearchFilter, OrderingFilter
@@ -8,6 +11,7 @@ from rest_framework.utils import json, encoders
 from django.db.models import Sum, F
 from django.db import transaction
 from django.conf import settings
+from django.core.files.base import ContentFile
 
 from .models import Store
 from .models import StoreContact
@@ -507,6 +511,97 @@ class ProductAdminViewSet(ModelViewSet):
     def filter_queryset(self, queryset):
         queryset = query_params_filter(self.request, queryset, self.filter_key_fields, self.filter_char_fields)
         return super(ProductAdminViewSet, self).filter_queryset(queryset)
+
+    @transaction.atomic
+    @action(methods=['post'], detail=False)
+    def upload(self, request):
+        try:
+            store = request.user.store_set.get(id=request.query_params.get('store'))
+        except Store.DoesNotExist:
+            return Response({'detail': 'Неверный идентификатор магазина'}, status=400)
+        fid = request.FILES["fid"]
+        try:
+            frame = pd.read_excel(fid, sheet_name='Products').to_dict()
+            product_names = list(frame["ProductName"])
+            category_names = list(frame["CategoryName"])
+            product_costs = list(frame["ProductCost"])
+            product_counts = list(frame["ProductCount"])
+            product_descriptions = list(frame["ProductDescription"])
+            product_photos = list(frame["ProductPhotos"])
+            product_properties = list(frame["ProductProperties"])
+
+            new_categories = list()
+            products_on_moderation = list()
+            new_products = list()
+
+            for name, category_name, cost, count, description, photos, properties in zip(product_names, category_names,
+                                                                                         product_costs, product_counts,
+                                                                                         product_descriptions,
+                                                                                         product_photos,
+                                                                                         product_properties):
+                try:
+                    if store.product_set.filter(name=name).exists():
+                        product = store.product_set.get(name=name)
+                    else:
+                        product = Product(store=store, name=name)
+                        new_products.append(name)
+                    if Category.objects.filter(name=category_name).exists():
+                        category = Category.objects.get(name=category_name)
+                    else:
+                        category = Category.objects.create(name=category_name, moderator_confirmed=False)
+                        new_categories.append(category_name)
+                        products_on_moderation.append(name)
+
+                    product.category = category
+                    product.cost = float(cost)
+                    product.count = int(count)
+                    product.description = description
+                    product.save()
+
+                    for url in photos.split(', '):
+                        product.productphoto_set.create(
+                            img=ContentFile(requests.get(url).content, f'{name.replace(" ", "_")}.png'))
+
+                    for property in properties.split(', '):
+                        property_name, property_value = property.split(': ')
+                        if product.productproperty_set.filter(property_name=property_name).exists():
+                            p = product.productproperty_set.get(property_name=property_name)
+                            p.property_value = property_value
+                            p.save()
+                        else:
+                            product.productproperty_set.create(property_name=property_name,
+                                                               property_value=property_value)
+
+                except Exception as e:
+                    return Response(
+                        {
+                            'detail': 'Неверный формат фида. Скачайте пример и проферьте свой файл на ошибки',
+                            'row': {
+                                'ProductName': name,
+                                'CategoryName': category_name,
+                                'ProductCost': cost,
+                                'ProductCount': count,
+                                'ProductDescription': description,
+                                'ProductPhotos': photos,
+                                'ProductProperties': properties,
+                            }
+                        }, status=400
+                    )
+
+        except Exception as e:
+            return Response(
+                {
+                    'detail': 'Неверный формат фида. Скачайте пример и проферьте свой файл на ошибки',
+                    'row': None
+                }, status=400
+            )
+
+        return Response({
+            'detail': 'Товары успешно загружены в систему.',
+            'new_categories': new_categories,
+            'products_on_moderation': products_on_moderation,
+            'new_products': new_products
+        })
 
 
 class ProductPhotoAdminViewSet(ModelViewSet):

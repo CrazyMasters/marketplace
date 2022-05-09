@@ -5,3 +5,5 @@ channels
 channels_redis
 pyfcm
 yookassa
+pandas
+requests

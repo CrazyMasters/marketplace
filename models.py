@@ -44,7 +44,7 @@ class Category(models.Model):
 
     category = models.ForeignKey("marketplace.Category", on_delete=models.SET_NULL, default=None, null=True)
     name = models.CharField(max_length=100, unique=True)
-    img = models.ImageField(upload_to=upload_category_img)
+    img = models.ImageField(upload_to=upload_category_img, null=True, default=None)
     moderator_confirmed = models.BooleanField(default=False)
     description = models.TextField(blank=True)
 
@@ -87,6 +87,7 @@ class Product(models.Model):
     class Meta:
         verbose_name = "Товар"
         verbose_name_plural = "Товары"
+        unique_together = ['name', 'store']
 
 
 class ProductPhoto(models.Model):
