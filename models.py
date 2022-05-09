@@ -117,7 +117,7 @@ class ProductProperty(models.Model):
     class Meta:
         verbose_name = 'Характеристика товара'
         verbose_name_plural = 'Характеристики товаров'
-        unique_together = ['produce', 'property_name']
+        unique_together = ['product', 'property_name']
 
 
 # class Supply(models.Model):
