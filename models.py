@@ -91,7 +91,7 @@ class Product(models.Model):
     class Meta:
         verbose_name = "Товар"
         verbose_name_plural = "Товары"
-        unique_together = ['name', 'store']
+        unique_together = ['code', 'store']
 
 
 class ProductGroup(models.Model):
@@ -105,7 +105,6 @@ class ProductGroup(models.Model):
     class Meta:
         verbose_name = 'Группа товаров'
         verbose_name_plural = 'Группы товаров'
-        unique_together = ['store', 'name']
 
 
 class ProductPhoto(models.Model):
