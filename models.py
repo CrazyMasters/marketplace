@@ -66,9 +66,12 @@ class Product(models.Model):
     store = models.ForeignKey("marketplace.Store", on_delete=models.CASCADE)
     category = models.ForeignKey("marketplace.Category", on_delete=models.SET_NULL, null=True)
     cost = models.DecimalField(max_digits=12, decimal_places=2)
+    code = models.CharField(max_length=150, default=None)
+    group = models.ForeignKey('marketplace.ProductGroup', default=None, null=True, on_delete=models.SET_NULL)
     count = models.PositiveIntegerField()
     blocked = models.BooleanField(default=False)
     description = models.TextField(blank=True)
+    keywords = models.TextField(blank=True)
 
     # @property
     # def last_supply_date(self):
@@ -89,6 +92,20 @@ class Product(models.Model):
         verbose_name = "Товар"
         verbose_name_plural = "Товары"
         unique_together = ['name', 'store']
+
+
+class ProductGroup(models.Model):
+    store = models.ForeignKey('marketplace.Store', on_delete=models.CASCADE)
+    name = models.CharField(max_length=150)
+    description = models.TextField(blank=True, default='')
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name = 'Группа товаров'
+        verbose_name_plural = 'Группы товаров'
+        unique_together = ['store', 'name']
 
 
 class ProductPhoto(models.Model):

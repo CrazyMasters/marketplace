@@ -4,6 +4,7 @@ from .models import Store
 from .models import StoreContact
 from .models import Category
 from .models import Product
+from .models import ProductGroup
 from .models import ProductPhoto
 from .models import ProductProperty
 from .models import City
@@ -87,11 +88,11 @@ class ProductPropertyInline(admin.TabularInline):
 
 class ProductAdmin(admin.ModelAdmin):
     model = Product
-    list_display = ('name', 'store', 'category', 'cost', 'count', 'blocked', 'description',)
+    list_display = ('name', 'code', 'group', 'store', 'category', 'cost', 'count', 'blocked', 'description',)
     list_filter = ('blocked', 'category',)
     fieldsets = (
         (None, {
-            'fields': ('name', 'store', 'category', 'cost', 'count', 'description',)
+            'fields': ('name', 'code', 'group', 'store', 'category', 'cost', 'count', 'description',)
         }),
         ('Модерация', {
             'fields': ('blocked',)
@@ -99,15 +100,39 @@ class ProductAdmin(admin.ModelAdmin):
     )
     add_fieldsets = (
         (None, {
-            'fields': ('name', 'store', 'category', 'cost', 'count', 'description',)
+            'fields': ('name', 'code', 'group', 'store', 'category', 'cost', 'count', 'description',)
         }),
         ('Модерация', {
             'fields': ('blocked',)
         })
     )
-    search_fields = ('name', 'store__name', 'category__name', 'description',)
-    ordering = ('name', 'store', 'category', 'cost', 'count', 'blocked', 'description',)
+    search_fields = ('name', 'code', 'group__name', 'store__name', 'category__name', 'description',)
+    ordering = ('name', 'code', 'group', 'store', 'category', 'cost', 'count', 'blocked', 'description',)
     inlines = (ProductPhotoInline, ProductPropertyInline,)
+
+
+class ProductInline(admin.TabularInline):
+    model = Product
+    fk_name = "group"
+    extra = 0
+
+
+class ProductGroupAdmin(admin.ModelAdmin):
+    model = ProductGroup
+    list_display = ('name', 'store', 'description',)
+    fieldsets = (
+        (None, {
+            'fields': ('name', 'store', 'description',)
+        }),
+    )
+    add_fieldsets = (
+        (None, {
+            'fields': ('name', 'store', 'description',)
+        }),
+    )
+    search_fields = ('name', 'store__name', 'description',)
+    ordering = ('name', 'store', 'description',)
+    inlines = (ProductInline,)
 
 
 class CityAdmin(admin.ModelAdmin):
@@ -175,5 +200,6 @@ class OrderAdmin(admin.ModelAdmin):
 admin.site.register(Store, StoreAdmin)
 admin.site.register(Category, CategoryAdmin)
 admin.site.register(Product, ProductAdmin)
+admin.site.register(ProductGroup, ProductGroupAdmin)
 admin.site.register(City, CityAdmin)
 admin.site.register(Order, OrderAdmin)
