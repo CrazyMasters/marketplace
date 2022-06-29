@@ -4,6 +4,7 @@ from .models import Store
 from .models import StoreContact
 from .models import Category
 from .models import Product
+from .models import ProductGroup
 from .models import ProductPhoto
 from .models import ProductProperty
 from .models import CartPosition
@@ -47,6 +48,14 @@ class ProductSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Product
+        fields = '__all__'
+
+
+class ProductGroupSerializer(serializers.ModelSerializer):
+    _store = StoreSerializer(read_only=True, source='store')
+
+    class Meta:
+        model = ProductGroup
         fields = '__all__'
 
 

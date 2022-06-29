@@ -17,6 +17,7 @@ from .models import Store
 from .models import StoreContact
 from .models import Category
 from .models import Product
+from .models import ProductGroup
 from .models import ProductPhoto
 from .models import ProductProperty
 from .models import CartPosition
@@ -29,6 +30,7 @@ from .serializers import StoreSerializer
 from .serializers import StoreContactSerializer
 from .serializers import CategorySerializer
 from .serializers import ProductSerializer
+from .serializers import ProductGroupSerializer
 from .serializers import ProductPhotoSerializer
 from .serializers import ProductPropertySerializer
 from .serializers import CartPositionSerializer
@@ -114,7 +116,7 @@ class ProductViewSet(ReadOnlyModelViewSet):
     pagination_class = StandardPagination
     permission_classes = [AllowAny]
     filter_backends = [SearchFilter, OrderingFilter]
-    filter_key_fields = ['category', 'store']
+    filter_key_fields = ['category', 'store', 'group']
     filter_char_fields = ['name']
     search_fields = ['name', 'description']
     ordering_fields = ['name', 'description', 'cost']
@@ -500,7 +502,7 @@ class ProductAdminViewSet(ModelViewSet):
     pagination_class = StandardPagination
     permission_classes = [IsAuthenticated]
     filter_backends = [SearchFilter, OrderingFilter]
-    filter_key_fields = ['category', 'store']
+    filter_key_fields = ['category', 'store', 'group']
     filter_char_fields = ['name']
     search_fields = ['name', 'description']
     ordering_fields = ['name', 'description', 'cost']
@@ -522,37 +524,50 @@ class ProductAdminViewSet(ModelViewSet):
         fid = request.FILES["fid"]
         try:
             frame = pd.read_excel(fid, sheet_name='Products').to_dict()
-            product_names = list(frame["ProductName"])
-            category_names = list(frame["CategoryName"])
-            product_costs = list(frame["ProductCost"])
-            product_counts = list(frame["ProductCount"])
-            product_descriptions = list(frame["ProductDescription"])
-            product_photos = list(frame["ProductPhotos"])
-            product_properties = list(frame["ProductProperties"])
+            product_names = list(frame["ProductName"].values())
+            product_codes = list(frame["ProductCode"].values())
+            category_names = list(frame["CategoryName"].values())
+            group_names = list(frame["GroupName"].values())
+            product_costs = list(frame["ProductCost"].values())
+            product_counts = list(frame["ProductCount"].values())
+            product_descriptions = list(frame["ProductDescription"].values())
+            product_photos = list(frame["ProductPhotos"].values())
+            product_properties = list(frame["ProductProperties"].values())
 
             new_categories = list()
+            new_groups = list()
             products_on_moderation = list()
             new_products = list()
 
-            for name, category_name, cost, count, description, photos, properties in zip(product_names, category_names,
-                                                                                         product_costs, product_counts,
-                                                                                         product_descriptions,
-                                                                                         product_photos,
-                                                                                         product_properties):
+            zip_list = zip(
+                product_names, product_codes, category_names, group_names, product_costs, product_counts,
+                product_descriptions,
+                product_photos, product_properties
+            )
+
+            for product_name, product_code, category_name, group_name, cost, count, description, photos, properties in zip_list:
                 try:
-                    if store.product_set.filter(name=name).exists():
-                        product = store.product_set.get(name=name)
+                    if store.product_set.filter(code=product_code).exists():
+                        product = store.product_set.get(code=product_code)
                     else:
-                        product = Product(store=store, name=name)
-                        new_products.append(name)
+                        product = Product(store=store, name=product_name, code=product_code)
+                        new_products.append(product_name)
                     if Category.objects.filter(name=category_name).exists():
                         category = Category.objects.get(name=category_name)
                     else:
                         category = Category.objects.create(name=category_name, moderator_confirmed=False)
                         new_categories.append(category_name)
-                        products_on_moderation.append(name)
+                        products_on_moderation.append(product_name)
+                    if ProductGroup.objects.filter(name=group_name).exists():
+                        group = ProductGroup.objects.get(name=group_name)
+                    else:
+                        group = store.productgroup_set.create(name=group_name)
+                        new_groups.append(group_name)
 
+                    product.name = product_name
+                    product.code = product_code
                     product.category = category
+                    product.group = group
                     product.cost = float(cost)
                     product.count = int(count)
                     product.description = description
@@ -560,7 +575,7 @@ class ProductAdminViewSet(ModelViewSet):
 
                     for url in photos.split(', '):
                         product.productphoto_set.create(
-                            img=ContentFile(requests.get(url).content, f'{name.replace(" ", "_")}.png'))
+                            img=ContentFile(requests.get(url).content, f'{product_name.replace(" ", "_")}.png'))
 
                     for property in properties.split(', '):
                         property_name, property_value = property.split(': ')
@@ -577,7 +592,7 @@ class ProductAdminViewSet(ModelViewSet):
                         {
                             'detail': 'Неверный формат фида. Скачайте пример и проферьте свой файл на ошибки',
                             'row': {
-                                'ProductName': name,
+                                'ProductName': product_name,
                                 'CategoryName': category_name,
                                 'ProductCost': cost,
                                 'ProductCount': count,
@@ -600,8 +615,44 @@ class ProductAdminViewSet(ModelViewSet):
             'detail': 'Товары успешно загружены в систему.',
             'new_categories': new_categories,
             'products_on_moderation': products_on_moderation,
-            'new_products': new_products
+            'new_products': new_products,
+            'new_groups': new_groups
         })
+
+
+class ProductGroupAdminViewSet(ModelViewSet):
+    queryset = ProductGroup.objects.all()
+    serializer_class = ProductGroupSerializer
+    pagination_class = StandardPagination
+    permission_classes = [AllowAny]
+    filter_backends = [SearchFilter, OrderingFilter]
+    filter_key_fields = ['store']
+    filter_char_fields = ['name']
+    search_fields = ['name', 'description']
+    ordering_fields = ['store', 'name', 'description']
+
+    def get_queryset(self):
+        return self.queryset.filter(store__user=self.request.user)
+
+    def filter_queryset(self, queryset):
+        queryset = query_params_filter(self.request, queryset, self.filter_key_fields, self.filter_char_fields)
+        return super(ProductGroupAdminViewSet, self).filter_queryset(queryset)
+
+    @action(methods=['post'], detail=True)
+    def add_products(self, request):
+        instance = self.get_object()
+        products_id = request.data.get('products')
+        if isinstance(products_id, list):
+            instance.product_set.add(*products_id)
+        return Response({'detail': f'Товары успешно добавлены в группу "{instance.name}"'}, status=200)
+
+    @action(methods=['post'], detail=True)
+    def remove_products(self, request):
+        instance = self.get_object()
+        products_id = request.data.get('products')
+        if isinstance(products_id, list):
+            instance.product_set.remove(*products_id)
+        return Response({'detail': f'Товары успешно удалены из группы "{instance.name}"'}, status=200)
 
 
 class ProductPhotoAdminViewSet(ModelViewSet):
