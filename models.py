@@ -13,8 +13,19 @@ class Store(models.Model):
     logo = models.ImageField(upload_to=upload_store_logo)
     city = models.ForeignKey("marketplace.City", on_delete=models.SET_NULL, null=True)
     moderator_confirmed = models.BooleanField(default=False)
+    moderator_rejected = models.BooleanField(default=False)
+    moderator_rejected_comment = models.TextField(blank=True)
     blocked = models.BooleanField(default=False)
     description = models.TextField(blank=True)
+
+    # legal info
+    inn = models.CharField(max_length=100)
+    kpp = models.CharField(max_length=100, blank=True)
+    first_name = models.CharField(max_length=100, blank=True)
+    last_name = models.CharField(max_length=100, blank=True)
+    middle_name = models.CharField(max_length=100, blank=True)
+    mail_index = models.CharField(max_length=100, blank=True)
+    email = models.CharField(max_length=100, blank=True)
 
     def __str__(self):
         return self.name
@@ -51,7 +62,7 @@ class Category(models.Model):
 
     @property
     def nested(self):
-        return Category.objects.filter(category_id=self.id).exists()
+        return self.nested_categories.exists()
 
     def __str__(self):
         return self.name
@@ -147,7 +158,7 @@ class ProductProperty(models.Model):
 
 class CartPosition(models.Model):
     user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE, null=True, default=None)
-    tmp_user_code = models.TextField()
+    tmp_user_code = models.TextField(blank=True)
     product = models.ForeignKey("marketplace.Product", on_delete=models.CASCADE)
     count = models.PositiveIntegerField(default=1)
 
