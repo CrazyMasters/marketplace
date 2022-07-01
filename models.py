@@ -1,4 +1,7 @@
 import os
+from decimal import Decimal
+
+from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 from django.utils import timezone
 from django.contrib.auth import get_user_model
@@ -256,3 +259,82 @@ class OrderPosition(models.Model):
     class Meta:
         verbose_name = 'Позиция заказа'
         verbose_name_plural = 'Позиции заказов'
+
+
+class Discount(models.Model):
+    product = models.ForeignKey("marketplace.Product", on_delete=models.CASCADE, related_name="discounts")
+    discount_value = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        validators=[MinValueValidator(0.01), MaxValueValidator(100)]
+    )
+    date_start = models.DateTimeField()
+    date_end = models.DateTimeField()
+
+    def __str__(self):
+        return f'Скидка на {self.product.name}'
+
+    class Meta:
+        verbose_name = "Скидка"
+        verbose_name_plural = "Скидки"
+
+
+class Bundle(models.Model):
+    title = models.CharField(max_length=450)
+    price = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal(0.01))]
+    )
+    date_start = models.DateTimeField()
+    date_end = models.DateTimeField()
+
+    def __str__(self):
+        return self.title
+
+    class Meta:
+        verbose_name = "Набор"
+        verbose_name_plural = "Наборы"
+
+
+class BundlePosition(models.Model):
+    bundle = models.ForeignKey("marketplace.Bundle", on_delete=models.CASCADE, related_name="bundle_positions")
+    product = models.ForeignKey("marketplace.Product", on_delete=models.CASCADE, related_name="bundle_positions")
+    count = models.PositiveIntegerField(
+        validators=[MinValueValidator(1)]
+    )
+
+    def __str__(self):
+        return self.product.name
+
+    class Meta:
+        verbose_name = "Позиция набора"
+        verbose_name_plural = "Позиций набора"
+
+
+class DeliveryCost(models.Model):
+    store = models.ForeignKey("marketplace.Store", on_delete=models.CASCADE, related_name="delivery_costs")
+    city = models.ForeignKey("marketplace.City", on_delete=models.CASCADE, related_name="delivery_costs")
+    cost = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal(0.0))]
+    )
+    discount_cost = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal(0.0))]
+    )
+    cost_indication = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal(0.0))]
+    )
+
+    def __str__(self):
+        return f'Цена доставки в {self.city.name}'
+
+    class Meta:
+        verbose_name = "Цена доставки"
+        verbose_name_plural = "Цены доставки"
+# test commit
