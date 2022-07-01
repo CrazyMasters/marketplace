@@ -337,4 +337,6 @@ class DeliveryCost(models.Model):
     class Meta:
         verbose_name = "Цена доставки"
         verbose_name_plural = "Цены доставки"
+
+
 # test commit
