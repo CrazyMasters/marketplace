@@ -339,4 +339,5 @@ class DeliveryCost(models.Model):
         verbose_name_plural = "Цены доставки"
 
 
+
 # test commit
