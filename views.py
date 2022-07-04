@@ -26,6 +26,11 @@ from .models import City
 from .models import OrderAddress
 from .models import Order
 from .models import OrderPosition
+from .models import Bundle
+from .models import BundlePosition
+from .models import BundlePhoto
+from .models import Discount
+from .models import DeliveryCost
 
 from .serializers import StoreSerializer
 from .serializers import StoreContactSerializer
@@ -41,6 +46,11 @@ from .serializers import OrderSerializer
 from .serializers import OrderPositionSerializer
 from .serializers import ProductAdminSerializer
 from .serializers import StoreAdminSerializer
+from .serializers import DiscountSerializer
+from .serializers import BundleSerializer
+from .serializers import BundlePositionSerializer
+from .serializers import BundlePhotoSerializer
+from .serializers import DeliveryCostSerializer
 
 from .pagination import StandardPagination
 
@@ -730,3 +740,79 @@ class StoreContactAdminViewSet(ModelViewSet):
     def filter_queryset(self, queryset):
         queryset = query_params_filter(self.request, queryset, self.filter_key_fields, self.filter_char_fields)
         return super(StoreContactAdminViewSet, self).filter_queryset(queryset)
+
+
+class DiscountViewSet(ModelViewSet):
+    queryset = Discount.objects.all()
+    serializer_class = DiscountSerializer
+    pagination_class = StandardPagination
+    filter_key_fields = ['product']
+    filter_char_fields = []
+
+    def get_queryset(self):
+        queryset = self.queryset.filter(user=self.request.user)
+        return queryset
+
+    def filter_queryset(self, queryset):
+        queryset = query_params_filter(self.request, queryset, self.filter_key_fields, self.filter_char_fields)
+        return super(DiscountViewSet, self).filter_queryset(queryset)
+
+
+class BundleViewSet(ModelViewSet):
+    queryset = Bundle.objects.all()
+    serializer_class = BundleSerializer
+    pagination_class = StandardPagination
+    filter_key_fields = []
+    filter_char_fields = []
+
+    def get_queryset(self):
+        queryset = self.queryset.filter(user=self.request.user)
+        return queryset
+
+    def filter_queryset(self, queryset):
+        queryset = query_params_filter(self.request, queryset, self.filter_key_fields, self.filter_char_fields)
+        return super(BundleViewSet, self).filter_queryset(queryset)
+
+
+class BundlePositionViewSet(ModelViewSet):
+    queryset = BundlePosition.objects.all()
+    serializer_class = BundlePositionSerializer
+    pagination_class = StandardPagination
+    filter_key_fields = ["bundle"]
+    filter_char_fields = []
+
+    def get_queryset(self):
+        queryset = self.queryset.filter(bundle__user=self.request.user)
+        return queryset
+
+    def filter_queryset(self, queryset):
+        queryset = query_params_filter(self.request, queryset, self.filter_key_fields, self.filter_char_fields)
+        return super(BundlePositionViewSet, self).filter_queryset(queryset)
+
+
+class DeliveryCostViewSet(ModelViewSet):
+    queryset = DeliveryCost.objects.all()
+    serializer_class = DeliveryCostSerializer
+    pagination_class = StandardPagination
+    filter_key_fields = ["store", "city"]
+    filter_char_fields = []
+
+    def get_queryset(self):
+        queryset = self.queryset.filter(user=self.request.user)
+        return queryset
+
+    def filter_queryset(self, queryset):
+        queryset = query_params_filter(self.request, queryset, self.filter_key_fields, self.filter_char_fields)
+        return super(DeliveryCostViewSet, self).filter_queryset(queryset)
+
+
+class BundlePhotoViewSet(ModelViewSet):
+    queryset = BundlePhoto.objects.all()
+    serializer_class = BundlePhotoSerializer
+    pagination_class = StandardPagination
+    filter_key_fields = ["bundle"]
+    filter_char_fields = []
+
+    def filter_queryset(self, queryset):
+        queryset = query_params_filter(self.request, queryset, self.filter_key_fields, self.filter_char_fields)
+        return super(BundlePhotoViewSet, self).filter_queryset(queryset)

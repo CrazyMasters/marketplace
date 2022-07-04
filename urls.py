@@ -20,6 +20,11 @@ from .views import ProductPhotoAdminViewSet
 from .views import ProductPropertyAdminViewSet
 from .views import StoreAdminViewSet
 from .views import StoreContactAdminViewSet
+from .views import DiscountViewSet
+from .views import BundleViewSet
+from .views import BundlePositionViewSet
+from .views import BundlePhotoViewSet
+from .views import DeliveryCostViewSet
 
 router = DefaultRouter()
 
@@ -34,6 +39,11 @@ router.register('cities', CityViewSet)
 router.register('order_addresses', OrderAddressViewSet)
 router.register('orders', OrderViewSet)
 router.register('orders_positions', OrderPositionViewSet)
+router.register('discount', DiscountViewSet)
+router.register('bundle', BundleViewSet)
+router.register('bundle_position', BundlePositionViewSet)
+router.register('bundle_photo', BundlePhotoViewSet)
+router.register('delivery_cost', DeliveryCostViewSet)
 
 # admin
 router.register('admin/orders', OrderAdminViewSet)

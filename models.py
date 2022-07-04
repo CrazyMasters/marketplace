@@ -99,6 +99,8 @@ class Product(models.Model):
     #         return self.supply_set.filter(date__gt=timezone.now().date).order_by("date").first().date
     #     return None
 
+
+
     def __str__(self):
         return self.name
 
@@ -312,6 +314,21 @@ class BundlePosition(models.Model):
         verbose_name_plural = "Позиций набора"
 
 
+class BundlePhoto(models.Model):
+    def upload_bundle_photo(self, filename):
+        return os.path.join("bundle", str(self.bundle_id), filename)
+
+    bundle = models.ForeignKey("marketplace.Bundle", on_delete=models.CASCADE, related_name="photos")
+    img = models.ImageField(upload_to=upload_bundle_photo)
+
+    def __str__(self):
+        return self.bundle.title
+
+    class Meta:
+        verbose_name = "Фотография набора"
+        verbose_name_plural = "Фотографии наборов"
+
+
 class DeliveryCost(models.Model):
     store = models.ForeignKey("marketplace.Store", on_delete=models.CASCADE, related_name="delivery_costs")
     city = models.ForeignKey("marketplace.City", on_delete=models.CASCADE, related_name="delivery_costs")
@@ -337,6 +354,7 @@ class DeliveryCost(models.Model):
     class Meta:
         verbose_name = "Цена доставки"
         verbose_name_plural = "Цены доставки"
+
 
 
 

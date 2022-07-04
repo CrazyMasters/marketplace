@@ -12,6 +12,11 @@ from .models import City
 from .models import OrderAddress
 from .models import Order
 from .models import OrderPosition
+from .models import Discount
+from .models import Bundle
+from .models import BundlePosition
+from .models import BundlePhoto
+from .models import DeliveryCost
 
 
 class StoreSerializer(serializers.ModelSerializer):
@@ -161,3 +166,48 @@ class StoreAdminSerializer(serializers.ModelSerializer):
     class Meta:
         model = Store
         fields = '__all__'
+
+
+class DiscountSerializer(serializers.ModelSerializer):
+
+    _product = serializers.SlugRelatedField(read_only=True, slug_field="name", source="product")
+
+    class Meta:
+        model = Discount
+        fields = "__all__"
+
+
+class BundleSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Bundle
+        fields = "__all__"
+
+
+class BundlePositionSerializer(serializers.ModelSerializer):
+
+    _product = serializers.SlugRelatedField(read_only=True, slug_field="name", source="product")
+
+    class Meta:
+        model = BundlePosition
+        fields = "__all__"
+
+
+class DeliveryCostSerializer(serializers.ModelSerializer):
+
+    _store = serializers.SlugRelatedField(read_only=True, slug_field="name", source="store")
+    _city = serializers.SlugRelatedField(read_only=True, slug_field="name", source="city")
+
+    class Meta:
+        model = DeliveryCost
+        fields = "__all__"
+
+
+class BundlePhotoSerializer(serializers.ModelSerializer):
+
+    _bundle = serializers.SlugRelatedField(read_only=True, slug_field="title", source="bundle")
+
+    class Meta:
+        model = BundlePhoto
+        fields = "__all__"
+
