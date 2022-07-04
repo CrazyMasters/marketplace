@@ -187,10 +187,10 @@ class CartPositionViewSet(ReadOnlyModelViewSet):
     ordering_fields = []
 
     def get_queryset(self):
-        if self.request.user.is_authenticated:
-            return self.queryset.filter(user=self.request.user)
         if self.request.query_params.get('tmp'):
             return self.queryset.filter(tmp_user_code=self.request.query_params.get('tmp'))
+        if self.request.user.is_authenticated:
+            return self.queryset.filter(user=self.request.user)
         return self.queryset.none()
 
     def filter_queryset(self, queryset):
@@ -225,7 +225,7 @@ class CartPositionViewSet(ReadOnlyModelViewSet):
             elif not self.request.query_params.get("tmp"):
                 return Response({"detail": "Укажите временный токен пользователя"}, status=400)
             else:
-                self.queryset.create(product_id=product_id, count=count)
+                self.queryset.create(product_id=product_id, count=count, tmp_user_code=self.request.query_params.get("tmp"))
                 return Response({'detail': 'Товар успешно добавлен в корзину'})
 
     @action(methods=["get"], detail=False)
@@ -321,7 +321,7 @@ class OrderViewSet(ReadOnlyModelViewSet):
 
     @transaction.atomic
     @action(methods=['post'], detail=False)
-    def create(self, request):
+    def create_order(self, request):
         store_id = request.data.get('store')
         address_id = request.data.get('address')
 

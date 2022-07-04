@@ -10,6 +10,7 @@ from .models import ProductProperty
 from .models import City
 from .models import Order
 from .models import OrderPosition
+from .models import Discount
 
 
 class StoreContactInline(admin.TabularInline):
@@ -196,7 +197,7 @@ class OrderAdmin(admin.ModelAdmin):
         })
     )
 
-
+admin.site.register(Discount)
 admin.site.register(Store, StoreAdmin)
 admin.site.register(Category, CategoryAdmin)
 admin.site.register(Product, ProductAdmin)

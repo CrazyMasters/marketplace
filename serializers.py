@@ -44,6 +44,10 @@ class ProductSerializer(serializers.ModelSerializer):
     _store = StoreSerializer(read_only=True)
     cost = serializers.FloatField(read_only=True)
     photos = serializers.SerializerMethodField()
+    cost_with_discount = serializers.SerializerMethodField()
+
+    def get_cost_with_discount(self, instance):
+        return instance.dynamic_cost()
 
     def get_photos(self, instance):
         return [
@@ -79,6 +83,10 @@ class ProductPropertySerializer(serializers.ModelSerializer):
 class CartPositionSerializer(serializers.ModelSerializer):
     _product = ProductSerializer(read_only=True)
     cost = serializers.SerializerMethodField()
+    cost_with_discount = serializers.SerializerMethodField()
+
+    def get_cost_with_discount(self, instance):
+        return instance.product.dynamic_cost()
 
     def get_cost(self, instance):
         return round(instance.product.cost * instance.count, 2)

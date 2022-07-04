@@ -1,8 +1,10 @@
 import os
 from decimal import Decimal
+import datetime
 
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
+from django.db.models import Q
 from django.utils import timezone
 from django.contrib.auth import get_user_model
 
@@ -56,7 +58,7 @@ class Category(models.Model):
     def upload_category_img(self, filename):
         return os.path.join("categories", str(self.id), filename)
 
-    category = models.ForeignKey("marketplace.Category", on_delete=models.SET_NULL, default=None, null=True,
+    category = models.ForeignKey("marketplace.Category", on_delete=models.SET_NULL, default=None, null=True, blank=True,
                                  related_name='nested_categories')
     name = models.CharField(max_length=100, unique=True)
     img = models.ImageField(upload_to=upload_category_img, null=True, default=None)
@@ -86,6 +88,17 @@ class Product(models.Model):
     blocked = models.BooleanField(default=False)
     description = models.TextField(blank=True)
     keywords = models.TextField(blank=True)
+
+
+    def dynamic_cost(self):
+        current_datetime = datetime.datetime.now()
+        if self.discounts.all().exists():
+            discount = self.discounts.filter(
+                Q(date_start__lt=current_datetime) |
+                Q(date_end__gt=current_datetime)).first()
+            return self.cost - (self.cost / 100) * discount.discount_value
+        else:
+            return None
 
     # @property
     # def last_supply_date(self):
@@ -184,7 +197,8 @@ class CartPosition(models.Model):
     count = models.PositiveIntegerField(default=1)
 
     def __str__(self):
-        return f'{self.user.name}: {self.product.name} {self.count} шт.'
+        # {self.user.name}:
+        return f'{self.product.name} {self.count} шт.'
 
     class Meta:
         verbose_name = 'Позиция корзины'
@@ -264,6 +278,7 @@ class OrderPosition(models.Model):
 
 
 class Discount(models.Model):
+    user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE, related_name="discounts", default=None)
     product = models.ForeignKey("marketplace.Product", on_delete=models.CASCADE, related_name="discounts")
     discount_value = models.DecimalField(
         max_digits=5,
@@ -282,6 +297,7 @@ class Discount(models.Model):
 
 
 class Bundle(models.Model):
+    user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE, related_name="bundles", default=None)
     title = models.CharField(max_length=450)
     price = models.DecimalField(
         max_digits=10,
@@ -330,6 +346,7 @@ class BundlePhoto(models.Model):
 
 
 class DeliveryCost(models.Model):
+    user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE, related_name="delivery_costs", default=None)
     store = models.ForeignKey("marketplace.Store", on_delete=models.CASCADE, related_name="delivery_costs")
     city = models.ForeignKey("marketplace.City", on_delete=models.CASCADE, related_name="delivery_costs")
     cost = models.DecimalField(
