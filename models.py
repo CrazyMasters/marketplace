@@ -24,7 +24,7 @@ class Store(models.Model):
     description = models.TextField(blank=True)
 
     # legal info
-    inn = models.CharField(max_length=100)
+    inn = models.CharField(max_length=100, blank=True)
     kpp = models.CharField(max_length=100, blank=True)
     first_name = models.CharField(max_length=100, blank=True)
     last_name = models.CharField(max_length=100, blank=True)
@@ -89,7 +89,6 @@ class Product(models.Model):
     description = models.TextField(blank=True)
     keywords = models.TextField(blank=True)
 
-
     def dynamic_cost(self):
         current_datetime = datetime.datetime.now()
         if self.discounts.all().exists():
@@ -111,8 +110,6 @@ class Product(models.Model):
     #     if self.supply_set.filter(date__gt=timezone.now().date).exists():
     #         return self.supply_set.filter(date__gt=timezone.now().date).order_by("date").first().date
     #     return None
-
-
 
     def __str__(self):
         return self.name
@@ -372,10 +369,5 @@ class DeliveryCost(models.Model):
         verbose_name = "Цена доставки"
         verbose_name_plural = "Цены доставки"
 
-
-
-
-
 # test commit
 # Another test
-
